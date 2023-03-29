@@ -8,6 +8,7 @@ NdtLocalizer::NdtLocalizer(ros::NodeHandle &nh, ros::NodeHandle &private_nh):nh_
   // Publishers
   sensor_aligned_pose_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("points_aligned", 10);
   ndt_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("ndt_pose", 10);
+  ndt_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("ndt_odom", 10);
   exe_time_pub_ = nh_.advertise<std_msgs::Float32>("exe_time_ms", 10);
   transform_probability_pub_ = nh_.advertise<std_msgs::Float32>("transform_probability", 10);
   iteration_num_pub_ = nh_.advertise<std_msgs::Float32>("iteration_num", 10);
@@ -217,8 +218,40 @@ void NdtLocalizer::callback_pointcloud(
   result_pose_stamped_msg.header.frame_id = map_frame_;
   result_pose_stamped_msg.pose = result_pose_msg;
 
+  pre_pose_ = cur_pose_;
+  tf2::fromMsg(cur_pose_.pose.orientation, pre_quat);
+  cur_pose_ = result_pose_stamped_msg;
+  tf2::fromMsg(result_pose_stamped_msg.pose.orientation, cur_quat);
+
+  tf2::Quaternion quat_twist = cur_quat*pre_quat.inverse();
+  double roll_twist, pitch_twist, yaw_twist;
+  tf2::Matrix3x3(quat_twist).getRPY(roll_twist, pitch_twist, yaw_twist); // x y z
+
+  // calculate twists between two frames
+  const double dt = (cur_pose_.header.stamp - pre_pose_.header.stamp).toSec();
+  const double twist_x = (delta_translation(0))/dt;
+  const double twist_y = (delta_translation(1))/dt;
+  const double twist_z = (delta_translation(2))/dt;
+  const double twist_angular_x = (roll_twist)/dt;
+  const double twist_angular_y = (pitch_twist)/dt;
+  const double twist_angular_z = (yaw_twist)/dt; 
+
+
+  nav_msgs::Odometry odom_msg;
+  odom_msg.header.stamp = sensor_ros_time;
+  odom_msg.header.frame_id = map_frame_;
+  odom_msg.child_frame_id = base_frame_;
+  odom_msg.pose.pose = result_pose_msg;
+  odom_msg.twist.twist.linear.x = twist_x;
+  odom_msg.twist.twist.linear.y = twist_y;
+  odom_msg.twist.twist.linear.z = twist_z;
+  odom_msg.twist.twist.angular.x = twist_angular_x;
+  odom_msg.twist.twist.angular.y = twist_angular_y;
+  odom_msg.twist.twist.angular.z = twist_angular_z;
+
   if (is_converged) {
     ndt_pose_pub_.publish(result_pose_stamped_msg);
+    ndt_odom_pub_.publish(odom_msg);
   }
 
   // publish tf(map frame to base frame)

@@ -43,6 +43,7 @@ private:
 
     ros::Publisher sensor_aligned_pose_pub_;
     ros::Publisher ndt_pose_pub_;
+    ros::Publisher ndt_odom_pub_;
     ros::Publisher exe_time_pub_;
     ros::Publisher transform_probability_pub_;
     ros::Publisher iteration_num_pub_;
@@ -57,6 +58,9 @@ private:
     Eigen::Matrix4f base_to_sensor_matrix_;
     Eigen::Matrix4f pre_trans, delta_trans;
     bool init_pose = false;
+
+    geometry_msgs::PoseStamped pre_pose_, cur_pose_;
+    tf2::Quaternion pre_quat, cur_quat;
 
     std::string base_frame_;
     std::string map_frame_;
