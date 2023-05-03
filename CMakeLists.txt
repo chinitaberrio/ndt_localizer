@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
         pcl_conversions
         pcl_ros
         message_generation
+        rosbag
         )
 
 generate_messages(

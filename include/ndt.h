@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <ros/ros.h>
+#include <rosbag/bag.h>
 
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -64,6 +65,8 @@ private:
 
     std::string base_frame_;
     std::string map_frame_;
+
+    rosbag::Bag bag_out;
 
     // init guess for ndt
     geometry_msgs::PoseWithCovarianceStamped initial_pose_cov_msg_;

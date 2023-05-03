@@ -252,6 +252,8 @@ void NdtLocalizer::callback_pointcloud(
   if (is_converged) {
     ndt_pose_pub_.publish(result_pose_stamped_msg);
     ndt_odom_pub_.publish(odom_msg);
+    bag_out.write("/ndt_odometry",sensor_ros_time,odom_msg);
+    bag_out.write("/tf",sensor_ros_time,result_pose_stamped_msg);
   }
 
   // publish tf(map frame to base frame)
@@ -309,6 +311,8 @@ void NdtLocalizer::init_params(){
   private_nh_.getParam("max_iterations", max_iterations);
 
   map_frame_ = "map";
+  std::string out_bag_name = "/tmp/odometry_bag.bag";
+  bag_out.open(out_bag_name, rosbag::bagmode::Write);
 
   ndt_.setTransformationEpsilon(trans_epsilon);
   ndt_.setStepSize(step_size);
