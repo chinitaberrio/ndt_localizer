@@ -249,11 +249,22 @@ void NdtLocalizer::callback_pointcloud(
   odom_msg.twist.twist.angular.y = twist_angular_y;
   odom_msg.twist.twist.angular.z = twist_angular_z;
 
+  geometry_msgs::TransformStamped msg;
+  msg.header.stamp = sensor_ros_time;
+  msg.header.frame_id = map_frame_;
+  msg.child_frame_id = base_frame_;
+  msg.transform.rotation = result_pose_msg.orientation;
+  msg.transform.translation.x = result_pose_msg.position.x;
+  msg.transform.translation.y = result_pose_msg.position.y;
+  msg.transform.translation.z = result_pose_msg.position.z;
+  tf2_msgs::TFMessage tfmsg;
+  tfmsg.transforms.push_back(msg);
+
   if (is_converged) {
     ndt_pose_pub_.publish(result_pose_stamped_msg);
     ndt_odom_pub_.publish(odom_msg);
     bag_out.write("/ndt_odometry",sensor_ros_time,odom_msg);
-    bag_out.write("/tf",sensor_ros_time,result_pose_stamped_msg);
+    bag_out.write("/tf",sensor_ros_time,tfmsg);
   }
 
   // publish tf(map frame to base frame)
